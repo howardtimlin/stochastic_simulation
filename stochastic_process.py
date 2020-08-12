@@ -10,7 +10,7 @@ numTransitions = 2 # maxium number of transition rates leaving any point in the 
 numCells = 32 # number of unit cells to be simulated
 displayWidth = 32 # number of cells wide the display will be
 
-#this is a test
+#another test
 
 iterations = 200 # number of iterations for the simulation
 timeStep = 1/5 # time step for each iteration of the simulation
