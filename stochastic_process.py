@@ -7,11 +7,11 @@ import matplotlib.animation as animation
 numTransitions = 2 # maxium number of transition rates leaving any point in the unit cell
 
 
-numCells = 32 # number of unit cells to be simulated
-displayWidth = 32 # number of cells wide the display will be
+numCells = 8 # number of unit cells to be simulated
+displayWidth = 8 # number of cells wide the display will be
 
 
-iterations = 200 # number of iterations for the simulation
+iterations = 100 # number of iterations for the simulation
 timeStep = 1/5 # time step for each iteration of the simulation
 delay = 1000/iterations # delay between frames in animation
 
@@ -40,8 +40,7 @@ for n in range(numCells * fSize):
             U[n,m] = 1
 
 V = np.matmul(Y,np.matmul(U,Yinverse))
-Vinverse = np.linalg.pinv(V)
-
+Vinverse = V
 
 cell = np.zeros((fSize, numTransitions, 2)) # matrix storing transition rates for each unit cell
 # 1st dimension - specifies the point in the unit cells
@@ -214,6 +213,7 @@ for r in range(len(a1)):
             arr1[r].append(frame)
 
 
+
     p = Vp0
 
     for i in range(iterations):
@@ -273,7 +273,8 @@ for r in range(len(a1)):
 
             arr2[r].append(frame)
 
-
+        if arr2[r][i].max()>1:
+            print(str(arr2[r][i].max())+" "+str(r)+" "+str(i))
 
 
 #a = np.add(p0, np.matmul(Y, np.matmul(U, np.matmul(Yinverse, np.add(a, p0 * (-1))))))
