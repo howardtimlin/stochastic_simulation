@@ -78,7 +78,8 @@ def main():
         p0[int(numCells * numMolecules / 2 - i - 1)] = 1/(numMolecules)
 
     print("|V p_0 - p_0| :")
-    print(np.linalg.norm(np.add(p0,np.matmul(V,p0) * (-1))))
+    initial_V_invariance = np.linalg.norm(np.add(p0,np.matmul(V,p0) * (-1)))
+    print(initial_V_invariance)
 
     for r in range(len(a1)):
 
@@ -136,7 +137,8 @@ def main():
 
     print("norm of difference between estimated and actual p(t):")
     c = np.add(a,b * (-1))
-    print(np.linalg.norm(c))
+    equivariance_score = np.linalg.norm(c)
+    print(equivariance_score)
 
 
     sampleCommutators = []
@@ -157,7 +159,8 @@ def main():
 
 
     print("norm of average commutator |psi Y U - U psi Y| for random concentration vectors:")
-    print(np.average(sampleCommutators))
+    commutation_score = np.average(sampleCommutators)
+    print(commutation_score)
 
 
     # gather frames of animation into animated plot
@@ -188,7 +191,7 @@ def main():
     ani = animation.ArtistAnimation(fig, ims, interval=delay, blit=True)
 
     if generateVideo:
-        videoWriter = animation.FFMpegWriter(fps=15)
+        videoWriter = animation.FFMpegWriter(fps=15, metadata={"comment":"initial_V_invariance = "+str(initial_V_invariance)+" equivariance_score = "+str(equivariance_score)+" commutation_score = "+str(commutation_score)})
         ani.save('out.mp4', writer=videoWriter, dpi=200)
 
     plt.show()
