@@ -3,6 +3,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+matplotlib.rcParams['animation.ffmpeg_path'] = r'C:\\Users\\Howard\\AppData\\Local\\FFmpeg\\bin\\ffmpeg.exe'
+
 
 numTransitions = 2 # maxium number of transition rates leaving any point in the unit cell
 
@@ -25,6 +27,10 @@ displayMode = 2 # display mode (1-3)
 reactions = np.array( [ [1,0], [0,2], [1,0] ] ) # array representing the set of reactions
 # collumn vectors are the multiplicities of each substance in each complex
 # e.g. 2X+Y <-> 3Y would have reaction matrix [[2,0],[1,3]]
+
+
+generateVideo = True
+
 
 fSize = reactions.shape[1] # size of the fundamnetal domain of each unit cell, i.e. number of complexes in the set of reactions
 numMolecules = reactions.shape[0] # number of differnt molecules in the set of reactions
@@ -102,8 +108,8 @@ def main():
 
         # convert the probability/concentration vector into the first frame of the animation
         arr[0][r].append(vectorToFrame(p0))
-        arr[1][r].append(vectorToFrame(p0))
-        arr[2][r].append(vectorToFrame(p0))
+        arr[1][r].append(vectorToFrame(np.matmul(V,p0)))
+        arr[2][r].append(vectorToFrame(np.matmul(V,p0)))
 
 
         p = p0
@@ -150,17 +156,17 @@ def main():
         sampleCommutators.append(np.linalg.norm(np.add(randUPsi, np.matmul(U, randPsi) * (-1))))
 
 
-    print("norm of average commutator |psi.Y.U - U.psi.Y| for random concentration vectors:")
+    print("norm of average commutator |psi Y U - U psi Y| for random concentration vectors:")
     print(np.average(sampleCommutators))
 
 
     # gather frames of animation into animated plot
-    fig = plt.figure()
+    fig = plt.figure(figsize=(9,6))
     axes = [ fig.add_subplot(len(a1),4,r+1) for r in range(4 * len(a1)) ]
     axes[0].set_title('E(t)[x(0)]')
     axes[1].set_title('VE*(t)[x(0)]')
     axes[2].set_title('E(t)[Vx(0)]')
-    axes[3].set_title('| VE*(t)[x(0)] - E(t)[Vx(0)] |')
+    axes[3].set_title('|VE*(t)[x(0)] - E(t)[Vx(0)]|')
 
     ims = []
     for i in range(iterations+1):
@@ -181,9 +187,9 @@ def main():
 
     ani = animation.ArtistAnimation(fig, ims, interval=delay, blit=True)
 
-    #Writer = animation.writers['ffmpeg']
-    #writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-    #ani.save('out.mp4', writer=writer)
+    if generateVideo:
+        videoWriter = animation.FFMpegWriter(fps=15)
+        ani.save('out.mp4', writer=videoWriter, dpi=200)
 
     plt.show()
 
