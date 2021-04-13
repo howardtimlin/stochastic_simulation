@@ -9,11 +9,11 @@ matplotlib.rcParams['animation.ffmpeg_path'] = r'C:\\Users\\Howard\\AppData\\Loc
 numTransitions = 2 # maxium number of transition rates leaving any point in the unit cell
 
 
-numCells = 32 # number of unit cells to be simulated
-displayWidth = 32 # number of cells wide the display will be
+numCells = 64 # number of unit cells to be simulated
+displayWidth = 64 # number of cells wide the display will be
 
 
-iterations = 500 # number of iterations for the simulation
+iterations = 1000 # number of iterations for the simulation
 timeStep = 1/5 # time step for each iteration of the simulation
 delay = 1000/iterations # delay between frames in animation
 
@@ -24,12 +24,12 @@ displayMode = 2 # display mode (1-3)
 # 3 - displays the value of the first three points in each unit cell as the three color channels
 
 
-reactions = np.array( [ [1,0], [0,2], [1,0] ] ) # array representing the set of reactions
+reactions = np.array( [ [0,2],[1,0],[0,2] ] ) # array representing the set of reactions
 # collumn vectors are the multiplicities of each substance in each complex
 # e.g. 2X+Y <-> 3Y would have reaction matrix [[2,0],[1,3]]
 
 
-generateVideo = True
+generateVideo = False
 
 
 fSize = reactions.shape[1] # size of the fundamnetal domain of each unit cell, i.e. number of complexes in the set of reactions
@@ -39,23 +39,34 @@ psiWidth = displayWidth * fSize # width of each row of the display in terms the 
 
 # Under the duality presented in my email, a1 <-> b1 and a2 <-> b2 under the duality transformation
 a1 = [.9, .75, .5, .25, .1]
-a2 = [.8, .6, .5, .4, .2]
+a2 = [.2, .4, .5, .6, .8]
 b1 = np.ones(len(a1))-a1
 b2 = np.ones(len(a2))-a2
 
 
 # transition rate matrix duality operator
 U = np.zeros((numCells * fSize, numCells * fSize))
+
 for n in range(numCells * fSize):
     for m in range(numCells * fSize):
+#        if (n + m) == (numCells * fSize - 1):
+#            U[n,m] = 1
+
         if (n + m) == (numCells * fSize - 2):
             U[n,m] = 1
 
 
+
 Y = np.kron(np.eye(numCells,dtype=int),reactions) # tile reaction matrix along the diagonal to create matrix "projecting" back down to observable concentrations
+
 Yinverse = np.kron(np.eye(numCells,dtype=int), np.linalg.pinv(reactions))
 
+
 V = np.matmul(Y,np.matmul(U,Yinverse))
+#print(V)
+
+
+x = np.arange(-displayWidth/2, displayWidth/2, 1)
 
 
 def main():
@@ -75,17 +86,24 @@ def main():
 
     # initialize the probability/concentration vector
     for i in range(numMolecules):
-        p0[int(numCells * numMolecules / 2 - i - 1)] = 1/(numMolecules)
+        #p0[0] = 2/3
+        #p0[1] = 1/3
+
+        #p0[int(numCells * numMolecules / 2 - i - 1)] = 1/(numMolecules)
+
+        p0[i::numMolecules] = np.expand_dims(gaussian(x,0,1.5), axis=1)
 
     print("|V p_0 - p_0| :")
     initial_V_invariance = np.linalg.norm(np.add(p0,np.matmul(V,p0) * (-1)))
     print(initial_V_invariance)
 
+    pFinal = np.zeros((numCells * numMolecules, 1))
+
     for r in range(len(a1)):
 
         # initialize unit cell transition rates
-        cell[0,:,:] = [[b1[r], 1 - fSize], [a1[r], 1]]
-        cell[1,:,:] = [[a2[r], -1], [b2[r], -1 + fSize]]
+        cell[0,:,:] = [[a1[r], 1], [b1[r],-1]]
+        cell[1,:,:] = [[a2[r], -1], [b2[r], 1]]
 
 
         p = np.zeros((numCells * numMolecules, 1)) # probability/concentration vector
@@ -132,6 +150,10 @@ def main():
             arr[0][r].append(vectorToFrame(p))
             arr[1][r].append(vectorToFrame(np.matmul(V,p)))
             arr[2][r].append(vectorToFrame(Vp))
+
+            if i==iterations-1 and r==len(a1)-1:
+                pFinal = np.matmul(V,p)
+
 
 
 
@@ -196,6 +218,22 @@ def main():
 
     plt.show()
 
+    fig, axes = plt.subplots(numMolecules, 1, sharey=True, tight_layout=True)
+
+    axes[0].axes.yaxis.set_ticks([])
+    axes[0].axes.xaxis.set_ticks([])
+    axes[1].axes.yaxis.set_ticks([])
+    axes[1].axes.xaxis.set_ticks([])
+    axes[2].axes.yaxis.set_ticks([])
+
+    plt.xticks(fontsize=16)
+
+    axes[0].plot(x,pFinal[0::numMolecules],'r')
+    axes[1].plot(x,pFinal[1::numMolecules],'g')
+    axes[2].plot(x,pFinal[2::numMolecules],'b')
+
+    plt.show()
+
 
 def iterateVector(vec, W):
     psi = np.ones((numCells * fSize, 1)) # vector of complex concentrations
@@ -252,6 +290,8 @@ def vectorToFrame(vec):
 
         return frame
 
+def gaussian(x, mu, sig):
+    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.))) / (sig * np.sqrt(2 * np.pi))
 
 if __name__ == "__main__":
     main()
