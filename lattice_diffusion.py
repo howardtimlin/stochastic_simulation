@@ -6,23 +6,32 @@ import random
 import time
 from multiprocessing import Pool
 
+
+''' N.B. You may need to include this line with the path to your ffmpeg install location '''
 matplotlib.rcParams['animation.ffmpeg_path'] = r'C:\\Users\\Howard\\AppData\\Local\\FFmpeg\\bin\\ffmpeg.exe'
+
+
+
+''' Example File '''
+
+example = "2D_2DOF_toy_duality.py"
+
 
 
 ''' Simulation Size '''
 
 # Number of Timesteps
-iterations = 150
+iterations = 500
 
 # Number of unit cells in each basis vector direction of  bravais lattice
-numCells = 64
+numCells = 32
 
 # Number of pixels in real space simulation
-resolution = 64
+resolution = 32
 
 
 # Units of time simulation will run for
-tSize = 150
+tSize = 10
 
 # Width/height of simulation arena in units of distance
 xSize = 1000
@@ -41,16 +50,19 @@ delta = xSize / numCells
 
 
 
-''' Display Parameters '''
+''' Animation Perameters '''
 
 # Delay between frames of animation in miliseconds
-frameDelay = 50
+frameDelay = 40
 
-# Amplification of colors in animation (power color value 0-1 will be raised to)
+# Amplification of colors in animation (color values 0-1 will be raised to this power)
 amp = 50
 
 # Output a video of the animation
 generateVideo = True
+
+# Location/name of output video
+outputFile = "Outputs/output.mp4"
 
 # Number of samples in each direction of dispersion relation plot
 dispersionSamples =128
@@ -60,125 +72,13 @@ dispersionSamples =128
 
 ''' Diffusion Dynamical Matrix '''
 
-# Bravais Lattice Vectors
-b1 = np.array([1, 0])
-#b2 = np.array([1/2, np.sqrt(3)/2])
-b2 = np.array([0, 1])
 
+# Get transition rate matrix W from example file
+exFile = open(".//Examples//" + example, "r")
+fileContents = exFile.read()
+exec(fileContents)
+exFile.close()
 
-# Relative positions of the nearest neighbors in bravais lattice basis
-neighborVectors = [[0,0], [1,0], [-1,0], [0,1], [0,-1]]
-
-
-'''
-# Diffusion transfor rates wij(kl)n
-w120 = random.random()
-w121 = random.random() * (1-w120)
-w122 = random.random() * (1-w120-w121)
-w123 = random.random() * (1-w120-w121-w122)
-w124 = 1-w123-w122-w121-w120
-
-w210 = random.random()
-w211 = random.random() * (1-w210)
-w212 = random.random() * (1-w210-w211)
-w213 = random.random() * (1-w210-w211-w212)
-w214 = 1-w213-w212-w211-w210
-
-
-# W(q) + I operator where translations are defined by the neighbor vector
-#   corresponding to the position in the first axis of the W variable
-W = np.array([
-
-[ [ [[0]], [[w120]] ],
-  [ [[w210]], [[0]] ] ],
-
-[ [ [[0]], [[w121]] ],
-  [ [[w211]], [[0]] ] ],
-
-[ [ [[0]], [[w122]] ],
-  [ [[w212]], [[0]] ] ],
-
-[ [ [[0]], [[w123]] ],
-  [ [[w213]], [[0]] ] ],
-
-[ [ [[0]], [[w124]] ],
-  [ [[w214]], [[0]] ] ],
-
-])
-'''
-
-'''
-np.random.seed(0)
-#W = np.random.rand(len(neighborVectors),2,2,1,1)
-W = np.ones((len(neighborVectors),2,2,1,1))
-for n in range(len(neighborVectors)):
-    for i in range(2):
-        for j in range(2):
-            if i==j:
-                W[n,i,j,0,0] = 0
-
-
-wSum = np.einsum('nijkl->ik', W)
-for i in range(2):
-    W[:,i,:,0,0] = W[:,i,:,0,0] / wSum[i,0]
-'''
-
-
-
-np.random.seed(0)
-W = np.random.rand(len(neighborVectors),2,2,2,2)
-#W = np.ones((len(neighborVectors),2,2,2,2))
-for n in range(len(neighborVectors)):
-    for i in range(2):
-        for j in range(2):
-            for k in range(2):
-                for l in range(2):
-                    if i==j and k==l:
-                        W[n,i,j,k,l] = 0
-                    elif k != l:
-                        W[n,i,j,k,l] = 0
-
-
-W[0,:,:,1,1] = W[0,:,:,0,0]
-W[1,:,:,1,1] = W[2,:,:,0,0]
-W[2,:,:,1,1] = W[1,:,:,0,0]
-W[3,:,:,1,1] = W[4,:,:,0,0]
-W[4,:,:,1,1] = W[3,:,:,0,0]
-
-
-wSum = np.einsum('nijkl->ik', W)
-for i in range(2):
-    for k in range(2):
-        W[:,i,:,k,:] = W[:,i,:,k,:] / wSum[i,k]
-
-
-
-'''
-#W = np.reshape(np.linspace(0,1,80), (len(neighborVectors),2,2,2,2))
-np.random.seed(0)
-W = np.random.rand(len(neighborVectors),2,2,2,2)
-#W = np.ones((len(neighborVectors),2,2,2,2))
-for n in range(len(neighborVectors)):
-    for i in range(2):
-        for j in range(2):
-            for k in range(2):
-                for l in range(2):
-                    if i==j and k==l:
-                        W[n,i,j,k,l] = 0
-                    elif i != j:
-                        W[n,i,j,k,l] = 0
-
-
-wSum = np.einsum('nijkl->ik', W)
-
-W[0,0,1,0,0] = wSum[0,0]/1000
-
-
-wSum = np.einsum('nijkl->ik', W)
-for i in range(2):
-    for k in range(2):
-        W[:,i,:,k,:] = W[:,i,:,k,:] / wSum[i,k]
-'''
 
 
 # Dimension of Lattice
@@ -203,13 +103,14 @@ for i in range(F):
             for l in range(M):
                 Wb[:, i*M+k, j*M+l] = W[:,i,j,k,l]
 
+print("W:")
 print(np.round(Wb, 3))
 
 
 
 # Calculates W(0) + I
 W0 = np.einsum('nij->ij', Wb)
-print("W(0)")
+print("W(0):")
 print(np.round(W0 - np.identity(F*M), 3))
 
 W0eigenValues = np.linalg.eig(W0)[0]
@@ -218,7 +119,6 @@ W0eigenVectors = np.linalg.eig(W0)[1]
 idx = W0eigenValues.argsort()[::-1]
 W0eigenValues = W0eigenValues[idx]
 W0eigenVectors = W0eigenVectors[:,idx]
-print(W0eigenVectors)
 
 
 # Diagonalization of W(0) + I
@@ -242,13 +142,16 @@ for i in W0eigenValues:
 
 zeroSubspace = np.zeros([cDOF, F, M])
 
+for n in range(cDOF):
+    W0eigenVectors[:,n] = W0eigenVectors[:,n] / np.sum(W0eigenVectors[:,n])
+
+
 
 for n in range(cDOF):
     for i in range(F):
         for k in range(M):
-            zeroSubspace[n,i,k] += (W0eigenVectors[:,:cDOF] * F * M / np.sum(np.absolute(W0eigenVectors[:,:cDOF]))).T[n,i*M+k] * np.sign(W0eigenVectors[:,:cDOF].T[n,i*M+k])
+            zeroSubspace[n,i,k] += (W0eigenVectors[:,:cDOF]  / np.sum(W0eigenVectors[i*M+k,:cDOF])).T[n,i*M+k] * np.sign(W0eigenVectors[:,:cDOF].T[n,i*M+k])
 
-print(zeroSubspace)
 
 # Initialize convection and diffusion tensors
 C = np.zeros([d, cDOF, cDOF])
@@ -309,18 +212,6 @@ def main():
         for j in range(resolution):
             initialDistribution[i,j] = gaussian2D(i*xSize/resolution,j*xSize/resolution,xSize/2,xSize/2,xSize/500,xSize/500)
 
-            '''
-            buffer = 25
-            initialDistribution[i,j] = ((np.cos(2*np.pi*i/5)+1)/2)
-            if i < buffer:
-                initialDistribution[i,j] = initialDistribution[i,j] * gaussian(i,buffer,buffer/2)
-            elif i > resolution-buffer:
-                initialDistribution[i,j] = initialDistribution[i,j] * gaussian(resolution-i,buffer/2,buffer/2)
-            if j < buffer:
-                initialDistribution[i,j] = initialDistribution[i,j] * gaussian(j,buffer,buffer/2)
-            elif j > resolution-buffer:
-                initialDistribution[i,j] = initialDistribution[i,j] * gaussian(resolution-j,buffer,buffer/2)
-            '''
 
     for i in np.ndindex(pT[0,0,0].shape):
         pT[(0,) + (slice(None),) + (slice(None),) + i] = realSpaceToLattice(np.expand_dims(np.array(initialDistribution / (F * M * np.sum(initialDistribution))), axis=(0,3)))[0,:,:,0]
@@ -334,120 +225,15 @@ def main():
     pT = pTResult.get()
     p = pResult.get()
 
-    '''
-    pTResult = pool.apply_async(pTFrames, [pT])
-    pResult = pool.apply_async(pFrames, [p])
-    ppTResult = pool.apply_async(ppTFrames, [pT, p])
-
-    animate(pTFrames(pT), pFrames(p), ppTFrames(pT, p)[0], ppTFrames(pT, p)[1])
-    '''
-
     animate(pT, p)
 
 
 
 
-    '''
-    print("\n\nSimulating Evolution:")
-
-    # Set up output animation
-    fig = plt.figure(figsize=(3*cDOF,8))
-    axes = [fig.add_subplot(3,cDOF,i+1) for i in range(3*cDOF)]
-    ims = []
-    errorSum = []
-
-
-    for t in range(iterations+1):
-
-        if t != iterations:
-
-            for x in np.ndindex(tuple([resolution for _ in range(d)])):
-
-                if all(index < numCells for index in x):
-
-                    pT[t + 1][x] = (1 - dt) * pT[t][x]
-                    for n in range(len(neighborVectors)):
-
-                        neighbor = np.add(list(x), neighborVectors[n])
-
-                        if all([index >= 0 and index < numCells for index in neighbor]):
-                            pT[t + 1][x] = pT[t + 1][x] + dt * np.einsum('ijkl,jl->ik', W[n], pT[(t,) + tuple(neighbor)])
-
-
-                p[t + 1][x] = p[t][x]
-
-                for dir1 in range(d):
-                    p[t + 1][x] = p[t + 1][x] + dt * np.einsum('ij,j->i', C[dir1], derivative(dir1, -1, p, t, x))
-
-                    for dir2 in range(d):
-                        p[t + 1][x] = p[t + 1][x] + dt * np.einsum('ij,j->i', D[dir1][dir2], derivative(dir1, dir2, p, t, x))
-
-
-        # Save current iteration to array of frames to be compiled into an animation
-        im = []
-
-        for i in range(3 * cDOF):
-            frame = np.ones((resolution, resolution, 3))
-
-            if i < cDOF:
-                frame[:,:,1] = frame[:,:,1] - latticeToRealSpace(coarseGrain(pT))[t,:,:,i]
-                frame[:,:,2] = frame[:,:,1]
-
-                frame = frame ** amp
-
-                im.append(axes[i].imshow(np.clip(frame, 0, 1)))
-
-            elif cDOF <= i < 2 * cDOF:
-                frame[:,:,1] = frame[:,:,1] - p[t,:,:,i - cDOF]
-                frame[:,:,2] = frame[:,:,1]
-
-                frame = frame ** amp
-
-                im.append(axes[i].imshow(np.clip(frame, 0, 1)))
-
-            else:
-                frame[:,:,0] = frame[:,:,0] - np.absolute(p[t,:,:,i - 2 * cDOF] - latticeToRealSpace(coarseGrain(pT))[t,:,:,i - 2 * cDOF])
-                frame[:,:,1] = frame[:,:,0]
-
-                frame = frame ** amp
-
-                im.append(axes[i].imshow(np.clip(frame, 0, 1)))
-
-
-        ims.append(im)
-
-        errorSum.append(np.sum(np.absolute(p[t] - latticeToRealSpace(coarseGrain(pT))[t])) / 2)
-
-        print(round(100*(t+1)/(iterations+1),1),"%")
-
-
-    # Create animation of evolution and potentially save video
-    ani = animation.ArtistAnimation(fig, ims, interval=frameDelay, blit=True)
-
-    if generateVideo:
-        videoWriter = animation.FFMpegWriter(fps=1000/frameDelay)
-        ani.save('out.mp4', writer=videoWriter, dpi=200)
-
-    plt.show()
-
-    times = np.arange(0,iterations+1,1)
-    plt.plot(times, errorSum)
-    plt.show()
-    '''
-
-
+# Computes spectrum for given wave-vector
 def spectrum(qx, qy, Wb):
     Weval = np.zeros((len(qx),) + (len(qy),) + Wb[0].shape, dtype=complex)
     specReturn = np.empty((len(qx),) + (len(qy),) + (Wb[0].shape[0],), dtype=complex)
-
-    '''
-    diff = np.empty((len(qx),) + (len(qy),) + (iterations+1,), dtype=complex)
-    pcgk = np.empty((len(qx),) + (len(qy),) + (iterations+1,), dtype=complex)
-    pfcgk = np.empty((len(qx),) + (len(qy),) + (iterations+1,), dtype=complex)
-    pcg = np.empty((len(qx),) + (len(qy),) + (iterations+1,), dtype=complex)
-    pfcg = np.empty((len(qx),) + (len(qy),) + (iterations+1,), dtype=complex)
-    '''
-
 
     times = np.arange(0,iterations+1,1)
 
@@ -465,36 +251,10 @@ def spectrum(qx, qy, Wb):
 
             specReturn[i,j] = eigenValues
 
-            '''
-            for t in range(iterations+1):
-                diagExp = np.zeros(Wb[0].shape, dtype=complex)
-                np.fill_diagonal(diagExp, np.exp(eigenValues * t))
-
-                initialKSpace = (np.exp(-((qx[i,j]*(xSize/200))**2)/2 - ((qy[i,j]*(xSize/200))**2)/2 + 1j*(xSize/2)*qx[i,j] + 1j*(xSize/2)*qy[i,j])
-                        * (xSize/200) * (xSize/200) / 4.000000052699427)
-
-                pcgk[i,j,t] = 2 * initialKSpace * np.exp(eigenValues[0] * t)
-                pfcgk[i,j,t] = np.matmul(eigenVectors, np.matmul(diagExp, np.matmul(np.linalg.inv(eigenVectors),
-                    np.matmul(np.linalg.inv(W0eigenVectors), np.ones(Wb[0].shape[0]) * initialKSpace))))[0]
-
-                #diff[i,j,t] = np.absolute(np.real(pfcg[i,j,t] - pcg[i,j,t]))
-            '''
-    '''
-    for t in range(iterations+1):
-        pcg[:,:,t] = np.fft.ifft2(pcgk[:,:,t])
-        pfcg[:,:,t] = np.fft.ifft2(pfcgk[:,:,t])
-
-    plt.plot(times, np.clip(np.einsum('ijk->k', np.absolute(np.real(pcg-pfcg))) * ((xSize/dispersionSamples) ** 2), 0,1))
-    plt.show()
-
-    ax = plt.axes(projection='3d')
-    ax.plot_wireframe(qx,qy, np.real(pcg[:,:,0]),color="red")
-    ax.plot_wireframe(qx,qy, np.real(pfcg[:,:,0]),color="blue")
-    '''
-
     return specReturn
 
 
+# Plots spectrum in 3D and as a spaghetti diagram
 def plotSpectrum(Wb):
     qx, qy = np.meshgrid(np.linspace(-np.pi, np.pi, dispersionSamples), np.linspace(-np.pi, np.pi, dispersionSamples))
     spec = spectrum(qx,qy, Wb)
@@ -534,18 +294,6 @@ def plotSpectrum(Wb):
     plt.show()
 
 
-    '''
-    times = np.arange(0,iterations+1,1)
-    testError = np.empty(iterations+1)
-    for i in range(iterations+1):
-        testError[i] = np.absolute(np.sum(np.exp(-(qx ** 2)-(qy ** 2)-(spec[:,:,0] * times[i])) * ((2*np.pi/dispersionSamples) ** 2))/4
-                + .70728 * np.sum(np.exp(-(qx ** 2)-(qy ** 2)-(spec[:,:,2] * times[i])) * ((2*np.pi/dispersionSamples) ** 2))/2
-                + np.sum(np.exp(-(qx ** 2)-(qy ** 2)-(spec[:,:,3] * times[i])) * ((2*np.pi/dispersionSamples) ** 2))/4
-                - np.sum(np.exp(-(qx ** 2)-(qy ** 2)-(spec[:,:,0] * times[i])) * ((2*np.pi/dispersionSamples) ** 2))/4)
-    plt.plot(times, testError)
-    plt.show()
-    '''
-
 
 # Define coarse-graining procedure (typically summing degrees of freedom which
 #   can transform into each ohter through dynamics)
@@ -553,7 +301,7 @@ def coarseGrain(pT):
     return np.einsum('...ik,nik->...n', pT, zeroSubspace)
 
 
-
+# Evolves initial conditions with full dynamics and returns state vector at each timestep
 def fullEvolve(pT, W, neighborVectors):
     t0 = time.time()
     for t in range(iterations):
@@ -574,6 +322,7 @@ def fullEvolve(pT, W, neighborVectors):
     return pT
 
 
+# Evolves initial conditions with coarse-grained dynamics and returns coarse-grained state vector at each timestep
 def cgEvolve(p, C, D):
     t0 = time.time()
     for t in range(iterations):
@@ -591,82 +340,7 @@ def cgEvolve(p, C, D):
     return p
 
 
-'''
-def pTFrames(pT):
-    t0 = time.time()
-    fig = plt.figure(figsize=(3*cDOF,8))
-    axes = [fig.add_subplot(3,cDOF,i+1) for i in range(3*cDOF)]
-    ims = []
-    for t in range(iterations+1):
-        im = []
-
-        for i in range(cDOF):
-            frame = np.ones((resolution, resolution, 3))
-            frame[:,:,1] = frame[:,:,1] - latticeToRealSpace(coarseGrain(pT))[t,:,:,i]
-            frame[:,:,2] = frame[:,:,1]
-
-            frame = frame ** amp
-
-            im.append(axes[i].imshow(np.clip(frame, 0, 1)))
-        ims.append(im)
-    print("pT Frames:", time.time()-t0)
-
-    return ims
-
-def pFrames(p):
-    t0 = time.time()
-    fig = plt.figure(figsize=(3*cDOF,8))
-    axes = [fig.add_subplot(3,cDOF,i+1) for i in range(3*cDOF)]
-    ims = []
-    for t in range(iterations+1):
-        im = []
-
-        for i in range(cDOF):
-            frame = np.ones((resolution, resolution, 3))
-
-            frame[:,:,1] = frame[:,:,1] - p[t,:,:,i]
-            frame[:,:,2] = frame[:,:,1]
-
-            frame = frame ** amp
-
-            im.append(axes[i+cDOF].imshow(np.clip(frame, 0, 1)))
-
-        ims.append(im)
-
-    print("p Frames:", time.time()-t0)
-
-    return ims
-
-def ppTFrames(pT, p):
-    t0 = time.time()
-    fig = plt.figure(figsize=(3*cDOF,8))
-    axes = [fig.add_subplot(3,cDOF,i+1) for i in range(3*cDOF)]
-    ims = []
-    errorSum = []
-    for t in range(iterations+1):
-        im = []
-
-        for i in range(cDOF):
-            frame = np.ones((resolution, resolution, 3))
-
-            frame[:,:,0] = frame[:,:,0] - np.absolute(p[t,:,:,i] - latticeToRealSpace(coarseGrain(pT))[t,:,:,i])
-            frame[:,:,1] = frame[:,:,0]
-
-            frame = frame ** amp
-
-            im.append(axes[i+2*cDOF].imshow(np.clip(frame, 0, 1)))
-
-
-        errorSum.append(np.sum(np.absolute(p[t] - latticeToRealSpace(coarseGrain(pT))[t])) / 2)
-
-        ims.append(im)
-
-    print("|pT-p| Frames:", time.time()-t0)
-
-    return [ims, errorSum]
-
-'''
-
+# Generates animation comparing full and coarse-grained evolution with error plot
 def animate(pT, p):
 
     # Set up output animation
@@ -675,19 +349,6 @@ def animate(pT, p):
     #ims = [[[] for _ in range(3 * cDOF)] for _ in range(iterations+1)]
     ims = []
     errorSum = []
-
-    '''
-    for t in range(iterations+1):
-        for i in range(3*cDOF):
-            if i < cDOF:
-                ims[t][i] = pTims[t][i]
-
-            elif cDOF <= i < 2 * cDOF:
-                ims[t][i] = pims[t][i - cDOF]
-
-            else:
-                ims[t][i] = ppTims[t][i - 2*cDOF]
-    '''
 
 
     for t in range(iterations+1):
@@ -724,10 +385,17 @@ def animate(pT, p):
 
 
         ims.append(im)
-        print(np.sum(pT[t]), np.sum(p[t]))
-        errorSum.append(np.sum(np.absolute(p[t] - latticeToRealSpace(coarseGrain(pT))[t])) / 2)
+        errorSum.append(np.sum(np.absolute(p[t] - latticeToRealSpace(coarseGrain(pT))[t]) ** 2))
 
-        print("Animation:", round(100*(t+1)/(iterations+1),1),"%"," ",np.sum(pT[t]), np.sum(p[t]))
+        print("Animation:", round(100*(t+1)/(iterations+1),1),"%")
+
+
+        # Optionally print sum of full/coarse-grained state vector at each timestep
+        #   to check if any of distribution is being lost to boundary conditions
+        #   (since distributions can transition out of the simulation arena distribution
+        #   not back in). Periodic boundary conditions could easily be added in later
+
+        # print(np.sum(pT[t]), np.sum(p[t]))
 
 
 
@@ -736,7 +404,7 @@ def animate(pT, p):
 
     if generateVideo:
         videoWriter = animation.FFMpegWriter(fps=1000/frameDelay)
-        ani.save('out.mp4', writer=videoWriter, dpi=200)
+        ani.save(outputFile, writer=videoWriter, dpi=200)
 
     plt.show()
 
